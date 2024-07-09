@@ -1,0 +1,674 @@
+// Author: Tan Hao Yang
+
+package control;
+
+import adt.ADTGraph;
+import adt.GraphInterface;
+import entity.Course;
+import entity.Programme;
+import boundary.CourseManagementUI;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map.Entry;
+import java.util.Iterator;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
+
+public class CourseManagement {    
+    private GraphInterface<Course> courseGraph = new ADTGraph();
+    private CourseManagementUI ui = new CourseManagementUI();
+    private HashMap<String, Course> courses = new HashMap<>();
+    private ProgrammeMaintenance prog;
+    private int maxNameLength = 45;
+    
+    public CourseManagement(ProgrammeMaintenance progClass){
+        prog = progClass;
+        addCourse("BAIT2203", "Human Computer Interaction");
+        addCourse("BACS2033", "Software Requirements Engineering");
+        addCourse("BACS2163", "Software Engineering");
+        addPrerequisite("BACS2033", "BACS2163");
+        addToProgramme("BACS2033", "Diploma in computer science");        
+    }
+    
+    public void runCourseManagement(){
+        int mainChoice, courseChoice, prereqChoice;        
+        
+        do{
+            ui.displayMainMenu();
+            mainChoice = ui.promptMenu();    
+            
+            switch(mainChoice){
+                case 0:
+                    break;
+                case 1:
+                    do{
+                        ui.displayCourseMenu();
+                        courseChoice = ui.promptMenu();
+                        
+                        switch(courseChoice){
+                            case 0:     
+                                ui.displayMainMenu();
+                                break;
+                            case 1:
+                                addCourse();
+                                break;
+                            case 2:
+                                removeCourse();
+                                break;
+                            case 3:
+                                editCourse();
+                                break;
+                            case 4:
+                                searchCourse();
+                                break;
+                            case 5:
+                                listAllCourse();
+                                break;
+                            default:
+                                System.out.println("Invalid option.");
+                                break;
+                        }
+                    }while(courseChoice != 0);
+                    break;
+                case 2:
+                    do{
+                        ui.displayPrerequisiteMenu();
+                        prereqChoice = ui.promptMenu();
+                        
+                        switch(prereqChoice){
+                            case 0:         
+                                ui.displayMainMenu();
+                                break;
+                            case 1:
+                                addPrerequisite();
+                                break;
+                            case 2:
+                                removePrerequisite();
+                                break;
+                            case 3:
+                                editPrerequisite();
+                                break;
+                            case 4:
+                                searchCourse();
+                                break;
+                            default:
+                                System.out.println("Invalid option.");
+                                break;
+                        }
+                    }while(prereqChoice != 0);
+                    break;
+                case 3:
+                    generateReport();                    
+                    break;
+                case 4:
+                    addToProgramme();
+                    break;
+                case 5:
+                    removeFromProgramme();
+                    break;
+                default:
+                    System.out.println("Invalid option.");
+                    break;
+            }
+            
+        }while(mainChoice != 0);
+    }
+    
+    public boolean validateCode(String code, boolean checkExists, int reportExists) {
+        Pattern pattern = Pattern.compile("[a-zA-Z]{4}[0-9]{4}");
+        Matcher matcher = pattern.matcher(code);
+        boolean exists = false;
+        if(matcher.matches()) {
+            if(checkExists){
+                exists = hasCode(code);
+                
+                switch(reportExists){
+                    case 0:
+                        if(!exists){
+                            System.out.println("Course does not exist.");
+                            return true;
+                        }else{
+                            return false;
+                        }
+                    case 1:
+                        if(exists){
+                            System.out.println("Course already exists.");
+                            return true;
+                        }else{
+                            return false;
+                        }
+                    default:
+                        return false;
+                }
+            }
+            return false;
+        } else {
+            System.out.println("Invalid code format.");
+            return true;
+        }
+        
+    }
+    
+    public boolean hasCode(String code){
+        return courses.containsKey(code);
+    }
+    
+    public void addCourse(){
+        String code;
+        String name;
+        do{
+            code = ui.promptString("Enter course code to add: ").toUpperCase(); 
+            if(code.equals("X")){
+                return;
+            }
+        }while(validateCode(code, true, 1));
+        
+        name = ui.promptString("Enter course name: ");
+        
+        if(name.length() > maxNameLength){
+            maxNameLength = name.length() + 9;
+        }
+            
+        Course newCourse =  new Course(code, name);
+        courses.put(code, newCourse);
+        courseGraph.addVertex(newCourse);
+        ui.displayMessage("Course added successfully.", false);
+              
+    }
+    
+    public void addCourse(String code, String name){
+        Course newCourse =  new Course(code.toUpperCase(), name);
+        courses.put(code, newCourse);
+        courseGraph.addVertex(newCourse);
+              
+    }
+    
+    public boolean removeCourse(){
+        String code;
+        do{
+            code = ui.promptString("Enter course code to remove: ").toUpperCase();
+            if(code.equals("X")){
+                return false;
+            }
+        }while(validateCode(code, true, 0));
+        
+        Course c = courses.get(code);
+        if(c != null) {
+            courseGraph.removeVertex(c);
+            courses.remove(code);
+            ui.displayMessage("Course removed successfully", false);
+            return true;
+        }
+        ui.displayMessage("Failed to remove course.", false);
+        return false;
+    }
+    
+    public boolean removeCourse(String code){
+        Course c = courses.get(code);
+        if(c != null) {
+            courseGraph.removeVertex(c);
+            courses.remove(code);
+            return true;
+        }
+        return false;
+    }
+    
+    public void addPrerequisite(){
+        String source;
+        String dest;
+        boolean cont = false;
+        do{
+            do{
+                source = ui.promptString("Enter course code to add prerequisites: ").toUpperCase();
+                if(source.equals("X")){
+                    return;
+                }
+            } while(validateCode(source, true, 0));
+
+            do{
+                dest = ui.promptString("Enter prerequisite course code: ").toUpperCase();
+                if(dest.equals("X")){
+                    return;
+                }
+            } while(validateCode(dest, true, 0));
+            
+            if(source.equals(dest)){
+                ui.displayMessage("Course cannot be prerequiste of itself.", false);
+            } else {
+                if(!courseGraph.hasEdge(getCourse(source), getCourse(dest))){
+                    cont = true;
+                } else{
+                    ui.displayMessage("Prerequisite already exists.", true);
+                }
+            }
+            
+            
+        }while(!cont);        
+        
+        courseGraph.addEdge(getCourse(source), getCourse(dest));
+        ui.displayMessage("Prerequisite added successfully.", false);
+    }
+    
+    public void addPrerequisite(String source, String dest){
+        courseGraph.addEdge(getCourse(source), getCourse(dest));
+    }
+    
+    public void removePrerequisite(){
+        String source;
+        String dest;
+        boolean cont = false;
+        do{
+            do{
+                source = ui.promptString("Enter course code to remove prerequisites: ").toUpperCase();
+                if(source.equals("X")){
+                    return;
+                }
+            } while(validateCode(source, true, 0));
+
+            do{
+                dest = ui.promptString("Enter prerequisite course code: ").toUpperCase();
+                if(dest.equals("X")){
+                    return;
+                }
+            } while(validateCode(dest, true, 0));
+            
+            if(courseGraph.hasEdge(getCourse(source), getCourse(dest))){
+                cont = true;
+            } else{
+                ui.displayMessage("Prerequisite does not exist.", true);
+            }
+        }while(!cont);
+        
+        ui.displayMessage("Prerequisite removed successfully.", false);
+        courseGraph.removeEdge(getCourse(source), getCourse(dest));
+    }
+    
+    public void removePrerequisite(String source, String dest){
+        courseGraph.removeEdge(getCourse(source), getCourse(dest));
+    }
+    
+    public void searchCourse(){
+        StringBuilder str = new StringBuilder();
+        String code;
+        String codeStr;
+        String nameStr;
+        int noOfMatches = 0;
+        String category;
+        
+        do{
+            category = ui.promptSearchCategory("Search by Course code(0) or Course name(1): ");
+            if(category.toUpperCase().equals("X")){
+                return;
+            }
+            if(!category.equals("1") & !category.equals("0")){
+                System.out.println("Invalid option. Enter again.");
+            }
+        }while(!category.equals("1") & !category.equals("0"));
+        
+        if(category.equals("0")){
+            do{
+                code = ui.promptString("Enter course code to search: ").toUpperCase();                
+            }while(validateCode(code, false, -1));
+            
+            Course c = getCourse(code);
+            str.append("Course info\n============\nCourse Code: " + c.getCode() + "\nCourse name: " + c.getName() + "\n");
+            
+            ui.displayMessage(str.toString(), false);
+            listAllPrerequisites(code, true);
+            
+        } else if(category.equals("1")){
+            str.append("Search matches:\n");
+            str.append("Course code    Course name\n");
+            str.append("===========================\n");
+            
+            String name = ui.promptString("Enter course name to search: ");
+            for (Entry<String, Course> entry: courses.entrySet()) {
+                codeStr = entry.getKey();
+                nameStr = entry.getValue().getName();
+                
+                if(nameStr.toLowerCase().contains(name.toLowerCase())){
+                    str.append(codeStr + "       " + nameStr + "\n");
+                    noOfMatches++;
+                }
+            }
+            if(noOfMatches == 0){
+                ui.displayMessage("No matches.", true);
+            } else{
+                ui.displayMessage(str.toString(), true);
+            }        
+        }
+    }
+    
+    public Course getCourse(String code){
+        return courses.get(code);
+    }
+    
+    public ArrayList<Course> getAllPrerequisite(String code){
+        Course c = getCourse(code);
+        Course iteratedCourse;
+        Iterator iterator = courseGraph.getIterator(c);
+        ArrayList<Course> iterateList = new ArrayList<>();
+        
+        while(iterator.hasNext()){
+            iteratedCourse = (Course)iterator.next();
+            iterateList.add(iteratedCourse);
+        }
+        
+        return iterateList;
+    }
+    
+    public void listAllCourse(){
+        StringBuilder str = new StringBuilder();
+        int noOfMatches = 0;
+        str.append("Course List:\n");
+        str.append("Course code    Course name\n");
+        str.append("===========================\n");
+        for (Course i : courses.values()) {
+            str.append(i.getCode() + "       " + i.getName() + "\n");
+            noOfMatches++;
+        }
+        if(noOfMatches == 0){
+            ui.displayMessage("There are no courses currently.", true);
+        } else{
+            ui.displayMessage(str.toString(), true);
+        }        
+    }
+    
+    public void listAllPrerequisites(String code, boolean wait){
+        StringBuilder str = new StringBuilder();
+        Course c = getCourse(code);
+        ArrayList<Course> prereqList = getAllPrerequisite(code);
+        
+        str.append("Prerequisites\n");
+        str.append("==============\n");
+        str.append("Course code    Course name\n");
+        str.append("===========================\n");
+        
+        if(prereqList.isEmpty()){
+            ui.displayMessage("Prerequisites\n==============\nNone", true);
+        } else{
+            for (int i = 0; i < prereqList.size(); i++) {
+                str.append(prereqList.get(i).getCode() + "       " + prereqList.get(i).getName() + "\n");
+            }
+            ui.displayMessage(str.toString(), wait);
+        }        
+    }
+    
+    public boolean editCourse(){
+        String oldCode;
+        String newCode;
+        
+        do{
+            oldCode = ui.promptString("Enter course code to edit: ").toUpperCase();
+            if(oldCode.equals("X")){
+                return false;
+            }
+        }while(validateCode(oldCode, true, 0));
+        
+        Course edit = getCourse(oldCode);        
+        
+        if(edit != null) {
+            ui.displayMessage("Current course info:\n" + edit.getCode() + "   " + edit.getName() + "\n", false);
+            listAllPrerequisites(edit.getCode(), false);
+            
+            do{
+                newCode = ui.promptString("Enter new course code: ").toUpperCase();
+                if(oldCode.equals("X")){
+                    return false;
+                }
+            }while(validateCode(newCode, false, -1));
+            
+            String newName = ui.promptString("Enter new course name: ");
+            if(newName.equals("X")){
+                return false;
+            }
+            
+            if(newName.length() > maxNameLength){
+               maxNameLength = newName.length() + 9;
+            }            
+            
+            Course c = getCourse(oldCode);
+            ArrayList<Course> prereqList = getAllPrerequisite(oldCode);
+            System.out.println(prereqList.size());
+            
+            removeCourse(oldCode);
+            addCourse(newCode, newName);
+            
+            if(!prereqList.isEmpty()){
+                for (int i = 0; i < prereqList.size(); i++) {
+                    addPrerequisite(newCode, prereqList.get(i).getCode());
+                }
+            } 
+            ui.displayMessage("Course edited successfully.", false);
+            return true;
+        }      
+        ui.displayMessage("Failed to edit course.", false);
+        return false;
+    }
+    
+    public boolean editPrerequisite(){
+        String oldCode;
+        String oldReq;
+        String newReq;
+        boolean cont = false;
+        boolean exists;
+        
+        do{
+            do{
+                oldCode = ui.promptString("Enter course code to edit prerequisites: ").toUpperCase();
+                if(oldCode.equals("X")){
+                    return false;
+                }
+            }while(validateCode(oldCode, true, 0));
+
+            Course editC = getCourse(oldCode);      
+
+            if(editC != null) {
+                ui.displayMessage("Current course info:\n" + editC.getCode() + "   " + editC.getName() + "\n", false);
+                ArrayList<Course> prereqs = getAllPrerequisite(oldCode);
+                listAllPrerequisites(oldCode, false);
+
+                do{
+                    oldReq = ui.promptString("Enter prerequisites code to edit: ").toUpperCase();
+                    if(oldReq.equals("X")){
+                        return false;
+                    }
+                    exists = courseGraph.hasEdge(getCourse(oldCode), getCourse(oldReq));
+                    
+                    if(!exists){
+                        ui.displayMessage("Course entered is not prerequisite of current course.", false);
+                    }
+                }while(!validateCode(oldReq, true, 0) && !exists);
+
+                do{
+                    newReq = ui.promptString("Enter new prerequisites code: ").toUpperCase();
+                    if(newReq.equals("X")){
+                        return false;
+                    }
+                    
+                }while(validateCode(newReq, true, 0));
+                
+                
+                
+                if(oldCode.equals(newReq)){
+                    ui.displayMessage("Course cannot be prerequiste of itself.", false);
+                } else {
+                    if(!courseGraph.hasEdge(getCourse(oldCode), getCourse(newReq))){
+                        removePrerequisite(oldCode, oldReq);
+                        addPrerequisite(oldCode, newReq);
+                        ui.displayMessage("Prerequisite edited successfully.", false);
+                        return true;
+                    } else{
+                        ui.displayMessage("Prerequisite already exists.", true);
+                    }
+                }
+            }
+        }while(!cont);
+        
+        ui.displayMessage("Failed to edit prerequisite.", false);
+        return false;
+    }
+    
+    public void generateReport(){
+        StringBuilder str = new StringBuilder();
+        String courseStr;
+        String reqStr;
+        String progStr;
+        int noOfRows;
+        str.append("Course Catalogue\n");
+        str.append("=================\n");
+        str.append(String.format("%-" + maxNameLength + "s" + " ", "Course"));
+        str.append(String.format("%-" + maxNameLength + "s" + " ", "Prerequisites"));
+        str.append(String.format("%-" + maxNameLength + "s" + "\n", "Taken by programmes"));
+        str.append(String.format("%"+ (maxNameLength*3 + 3) + "s", " ").replace(' ', '='));
+        str.append("\n");
+        
+        for (Entry<String, Course> entry: courses.entrySet()) {  
+            ArrayList<Course> prereq = getAllPrerequisite(entry.getValue().getCode());
+            ArrayList<Programme> programmes = entry.getValue().getProgrammes();
+            
+            courseStr = entry.getKey() + " " + entry.getValue().getName();
+            if(!prereq.isEmpty()){
+                reqStr = prereq.get(0).getCode() + " " + prereq.get(0).getName();
+            } else{
+                reqStr = "";
+            }
+            
+            if(!programmes.isEmpty()){
+                progStr = programmes.get(0).getName();
+            } else{
+                progStr = "";
+            }           
+            
+            str.append(String.format("%-" + maxNameLength + "s" + " ", courseStr));
+            str.append(String.format("%-" + maxNameLength + "s" + " ", reqStr));
+            str.append(String.format("%-" + maxNameLength + "s" + "\n", progStr));
+            
+            if(prereq.size() >= programmes.size()){
+                noOfRows = prereq.size();
+            } else {
+                noOfRows = programmes.size();
+            }
+            
+            for(int i = 1; i < noOfRows; i++){                
+                if(i < prereq.size()){
+                    reqStr = prereq.get(i).getCode() + "   " + prereq.get(i).getName();   
+                } else {
+                    reqStr = "";
+                }
+                
+                if(i < programmes.size()){
+                    progStr = programmes.get(i).getName();   
+                } else {
+                    progStr = "";
+                }
+                
+                str.append(String.format("%-" + maxNameLength + "s" + " ", ""));
+                str.append(String.format("%-" + maxNameLength + "s" + " ", reqStr));
+                str.append(String.format("%-" + maxNameLength + "s" + "\n", progStr));
+            }
+            str.append("\n");
+        }
+        ui.displayMessage(str.toString(), true);
+    }
+    
+    public void addToProgramme(){
+        String code;
+        String progName;
+        boolean cont = false;
+        Programme programme = null;
+        
+        do{
+            code = ui.promptString("Enter course code to add to programme: ").toUpperCase(); 
+            if(code.equals("X")){
+                return;
+            }
+        }while(validateCode(code, true, 0));
+        
+        do{
+            progName = ui.promptString("Enter programme name: ").toUpperCase(); 
+            if(code.equals("X")){
+                return;
+            }
+            for(int i = 1; i <= prog.getNumberOfProgramme(); i++){
+                if(prog.programmeList.getEntry(i).getName().toUpperCase().equals(progName)){
+                    programme = prog.programmeList.getEntry(i);
+                    cont = true;
+                } 
+            }
+            if(!cont){
+                    ui.displayMessage("Programme does not exist.", true);
+            }
+        }while(!cont);
+        
+        Course c = courses.get(code);
+        c.addProgramme(programme);
+        ui.displayMessage("Course added to programme successfully.", false);
+    }
+    
+    public void addToProgramme(String code, String progName){
+        Programme programme = null;
+        
+        for(int i = 1; i <= prog.getNumberOfProgramme(); i++){
+            if(prog.programmeList.getEntry(i).getName().equals(progName)){
+                programme = prog.programmeList.getEntry(i);
+            }
+        }
+        
+        Course c = courses.get(code);
+        c.addProgramme(programme);
+    }
+    
+    public void removeFromProgramme(){
+        String code;
+        String progName;
+        boolean cont = false;
+        Programme programme = null;
+        
+        do{
+            code = ui.promptString("Enter course code to remove from programme: ").toUpperCase(); 
+            if(code.equals("X")){
+                return;
+            }
+        }while(validateCode(code, true, 0));
+        
+        do{
+            progName = ui.promptString("Enter programme name: ").toUpperCase(); 
+            if(code.equals("X")){
+                return;
+            }
+            for(int i = 1; i <= prog.getNumberOfProgramme(); i++){
+                if(prog.programmeList.getEntry(i).getName().toUpperCase().equals(progName)){
+                    programme = prog.programmeList.getEntry(i);
+                    cont = true;
+                }
+            }
+            if(!cont){
+                    ui.displayMessage("Programme does not exist.", true);
+            }
+        }while(!cont);
+        
+        Course c = courses.get(code);
+        c.removeProgramme(programme);
+        ui.displayMessage("Course removed from programme successfully.", false);
+    }
+    
+    public void removeFromProgramme(String code, String progName){
+        Programme programme = null;
+        do{
+            code = ui.promptString("Enter course code to add to programme: ").toUpperCase(); 
+            if(code.equals("X")){
+                return;
+            }
+        }while(validateCode(code, true, 0));
+        
+        for(int i = 1; i <= prog.getNumberOfProgramme(); i++){
+            if(prog.programmeList.getEntry(i).getName().equals(progName)){
+                programme = prog.programmeList.getEntry(i);
+            }
+        }
+        
+        Course c = courses.get(code);
+        c.removeProgramme(programme);
+    }
+}
