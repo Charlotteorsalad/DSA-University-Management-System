@@ -1,0 +1,114 @@
+// Author: Tan Hao Yang
+
+package adt;
+
+import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Objects;
+
+public class ADTGraph<T> implements GraphInterface<T> {
+    private HashMap<T, ArrayList<T>> vertexes = new HashMap<>();  
+    private ArrayList<T> iterateVertex;
+    private int iterateIndex = 0;
+
+    @Override
+    public void addVertex(T newVertex) {
+        vertexes.put(newVertex, new ArrayList<>());       
+    }
+    
+    @Override
+    public boolean addEdge(T source, T dest) {
+        if(!vertexes.containsKey(source) || !vertexes.containsKey(dest)){
+            return false;
+        }
+        
+        return vertexes.get(source).add(dest);
+    }
+
+    @Override
+    public boolean removeVertex(T vertex) {
+        if(vertexes.remove(vertex) != null){
+            for (ArrayList<T> list : vertexes.values()) {
+                for(int edgeIndex = 0; edgeIndex < list.size(); edgeIndex++){
+                    if(list.get(edgeIndex) == vertex){
+                        list.remove(edgeIndex);
+                    }
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean removeEdge(T source, T dest) {
+        if(getEdgeIndex(source, dest) != -1){
+            return vertexes.get(source).remove(getEdgeIndex(source, dest)) != null;
+        }       
+        return false;
+    }
+
+    @Override
+    public boolean hasVertex(T source) {
+        return vertexes.containsKey(source);
+    }
+
+    @Override
+    public boolean hasEdge(T source, T dest) {
+        if(getEdgeIndex(source, dest) != -1){
+            return vertexes.get(source).get(getEdgeIndex(source, dest)) != null;
+        }
+        return false;
+    }
+    
+    @Override
+    public T getEdge(T source, T dest) {
+        if(!hasEdge(source, dest)){
+            return null;
+        }
+        
+        return vertexes.get(source).get(getEdgeIndex(source, dest));
+    }
+        
+    @Override
+    public Iterator<T> getIterator(T source) {
+        if(!hasVertex(source)){
+            return null;
+        }
+        iterateVertex = vertexes.get(source);
+        iterateIndex = 0;
+        return new edgeListIterator();
+    }
+    
+    private class edgeListIterator implements Iterator<T>{
+
+        @Override
+        public boolean hasNext() {
+            return iterateIndex < iterateVertex.size();
+        }
+
+        @Override
+        public T next() {
+            if(hasNext()){
+                T returndata = iterateVertex.get(iterateIndex);
+                iterateIndex++;
+                        
+                return returndata;
+                
+            } else {
+                return null;
+            }
+        }
+        
+    }
+    
+    private int getEdgeIndex(T source, T dest) {
+        for (int i = 0; i < vertexes.get(source).size(); i++) {
+            if(vertexes.get(source).get(i).equals(dest)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+}
