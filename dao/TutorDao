@@ -1,0 +1,46 @@
+// Author: Tan Kok Wang
+
+package dao;
+
+import adt.*;
+import entity.Tutor;
+import java.io.*;
+
+  public class TutorDao {
+    //file to store tutor data
+    private String fileName = "tutor.dat";
+
+    public void saveToFile(JYListInterface<Tutor> tutorList) {
+        File file = new File(fileName);
+        try (ObjectOutputStream ooStream = new ObjectOutputStream(new FileOutputStream(file))) {
+            ooStream.writeObject(tutorList);
+        } catch (FileNotFoundException ex) {
+            System.out.println("\nFile not found");
+        } catch (IOException ex) {
+            System.out.println("\nCannot save to file");
+        }
+  }
+
+  public JYListInterface<Tutor> retrieveFromFile() {
+    File file = new File(fileName);
+    JYListInterface<Tutor> tutorList = new JYArrayList<>();
+    
+    try {
+      ObjectInputStream oiStream = new ObjectInputStream(new FileInputStream(file));
+      Object obj = oiStream.readObject();
+            if (obj instanceof JYListInterface) {
+                tutorList = (JYListInterface<Tutor>) obj;
+            } else {
+                System.out.println("\nInvalid data format in the file.");
+            }
+    } catch (FileNotFoundException ex) {
+      System.out.println("\nFile not found.");
+    } catch (IOException ex) {
+      System.out.println("\nCannot read from file.");
+    } catch (ClassNotFoundException ex) {
+      System.out.println("\nClass not found.");
+    } 
+    
+      return tutorList;
+  }
+}
