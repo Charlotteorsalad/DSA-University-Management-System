@@ -1,0 +1,74 @@
+// Author: Tan Hao Yang
+
+package boundary;
+
+import java.util.Scanner;
+
+public class CourseManagementUI{
+    Scanner scanner = new Scanner(System.in);
+    
+    public void displayMainMenu(){        
+        System.out.println("================================");
+        System.out.println("    Course Management System");
+        System.out.println("================================\n");
+        
+        System.out.println("1. Manage courses");
+        System.out.println("2. Manage course prerequisites");
+        System.out.println("3. Generate report");
+        System.out.println("4. Add course to programme");
+        System.out.println("5. Remove course from programme");
+        System.out.println("0. Exit");
+    }
+    
+    public int promptMenu(){
+        System.out.print("Enter an option: ");
+        int option = scanner.nextInt();
+        scanner.nextLine();
+        return option;
+    }
+    
+    public void displayCourseMenu(){
+        System.out.println("================================");
+        System.out.println("         Manage Courses");
+        System.out.println("================================\n");
+        
+        System.out.println("1. Add course");
+        System.out.println("2. Remove course");
+        System.out.println("3. Edit course");
+        System.out.println("4. Search course");  
+        System.out.println("5. Course List");
+        System.out.println("0. Back");
+    }
+    
+    public void displayPrerequisiteMenu(){
+        System.out.println("================================");
+        System.out.println("      Manage Prerequisites");
+        System.out.println("================================\n");
+        
+        System.out.println("1. Add prerequisite course");
+        System.out.println("2. Remove prerequisite course");
+        System.out.println("3. Edit prerequisite course");
+        System.out.println("4. Search course");
+        System.out.println("0. Back");
+    }
+    
+    public String promptString(String msg){
+        System.out.print(msg); 
+        String str = scanner.nextLine();
+        return str;
+    }
+    
+    public String promptSearchCategory(String msg){
+        System.out.print(msg);
+        String option = scanner.nextLine();
+        return option;
+    }
+    
+    public void displayMessage(String outputStr, boolean wait){
+        System.out.println(outputStr);
+        if(wait){
+            System.out.println("Press 'Enter' to continue.");
+            scanner.nextLine();
+        }
+    }
+}
