@@ -1,0 +1,22 @@
+//Author: Kam Bee Foong
+package utility;
+
+public class MessageUI {
+
+    public static void displayInvalidChoiceMessage() {
+        System.out.println("\nInvalid choice");
+    }
+
+    public static void displayExitMessage() {
+        System.out.println("\nExiting system");
+    }
+
+    public static void pressEnterToContinue() {
+        System.out.print("Press Enter key to continue...");
+        try {
+            System.in.read();
+        } catch (Exception e) {
+
+        }
+    }
+}
